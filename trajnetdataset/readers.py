@@ -9,6 +9,12 @@ import scipy.interpolate
 
 from trajnetplusplustools import TrackRow
 
+def pharus(line):
+    line = [e for e in line.split('|') if e != '']
+    return TrackRow(int(line[0]),  # shift from 1-index to 0-index
+                    int(line[1]),
+                    float(line[2]),
+                    float(line[3]))
 
 def biwi(line):
     line = [e for e in line.split(' ') if e != '']

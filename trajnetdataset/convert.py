@@ -12,6 +12,13 @@ from .get_type import trajectory_type
 import warnings
 warnings.filterwarnings("ignore")
 
+def pharus(sc, input_file):
+    print('processing ' + input_file)
+    return (sc
+            .textFile(input_file)
+            .map(readers.pharus)
+            .cache())
+
 def biwi(sc, input_file):
     print('processing ' + input_file)
     return (sc
@@ -182,7 +189,7 @@ def categorize(sc, input_file, args):
                             fps=args.fps, track_id=val_id, args=args)
 
 def edit_goal_file(old_filename, new_filename):
-    """ Rename goal files. 
+    """ Rename goal files.
     The name of goal files should be identical to the data files
     """
 
@@ -239,9 +246,14 @@ def main():
 
     # Real datasets conversion
     if not args.synthetic:
+        #write(pharus(sc, 'data/raw/pharus/aufbau/test_aufbau.trk'),
+        #      'output_pre/{split}/test_aufbau.ndjson', args)
+        #categorize(sc, 'output_pre/{split}/test_aufbau.ndjson', args)
+
         write(biwi(sc, 'data/raw/biwi/seq_hotel/obsmat.txt'),
               'output_pre/{split}/biwi_hotel.ndjson', args)
         categorize(sc, 'output_pre/{split}/biwi_hotel.ndjson', args)
+        """
         write(crowds(sc, 'data/raw/crowds/crowds_zara01.vsp'),
               'output_pre/{split}/crowds_zara01.ndjson', args)
         categorize(sc, 'output_pre/{split}/crowds_zara01.ndjson', args)
@@ -254,6 +266,7 @@ def main():
         write(crowds(sc, 'data/raw/crowds/students003.vsp'),
               'output_pre/{split}/crowds_students003.ndjson', args)
         categorize(sc, 'output_pre/{split}/crowds_students003.ndjson', args)
+        """
 
         # # # new datasets
         # write(lcas(sc, 'data/raw/lcas/test/data.csv'),
