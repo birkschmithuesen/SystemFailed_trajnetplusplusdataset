@@ -9,12 +9,44 @@ import scipy.interpolate
 
 from trajnetplusplustools import TrackRow
 
+"""
 def pharus(line):
     line = [e for e in line.split('|') if e != '']
     return TrackRow(int(line[0]),  # shift from 1-index to 0-index
                     int(line[1]),
                     float(line[2]),
                     float(line[3]))
+"""
+
+def pharus(whole_file):
+    curr_frame = -1
+    curr_timestamp = -1
+    rows = []
+    for line in whole_file.split("\n"):
+        if not line:
+            continue
+        entries = [entry for entry in line.split("|") if entry]
+        if len(entries) != 4:
+            raise Exception("File contains invalid enty: '{}'".format(line))
+        timestamp = int(entries[0])
+        p_id = int(entries[1])
+        x = float(entries[2])
+        y = float(entries[3])
+
+        if timestamp > curr_timestamp:
+            curr_frame += 1
+            curr_timestamp = timestamp
+        elif timestamp < curr_timestamp:
+            raise Exception("File contains unordered timestamps. {} < {}".format(timestamp, curr_timestamp))
+
+        # convert 200 FPS to 2.5 FPS
+        FPS_CONVERSION_FACTOR = 80
+        if (curr_frame % FPS_CONVERSION_FACTOR) != 0:
+            continue
+
+        rows.append(TrackRow(curr_frame//FPS_CONVERSION_FACTOR, p_id, x, y))
+
+    return rows
 
 def biwi(line):
     line = [e for e in line.split(' ') if e != '']
