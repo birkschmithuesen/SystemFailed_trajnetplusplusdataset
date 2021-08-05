@@ -39,8 +39,8 @@ def pharus(whole_file):
         elif timestamp < curr_timestamp:
             raise Exception("File contains unordered timestamps. {} < {}".format(timestamp, curr_timestamp))
 
-        # convert 200 FPS to 2.5 FPS
-        FPS_CONVERSION_FACTOR = 80
+        # convert 30 FPS to 2.5 FPS
+        FPS_CONVERSION_FACTOR = 24
         if (curr_frame % FPS_CONVERSION_FACTOR) != 0:
             continue
 

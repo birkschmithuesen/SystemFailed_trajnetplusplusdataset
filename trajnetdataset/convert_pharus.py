@@ -1,6 +1,7 @@
 """Create Trajnet data from original datasets."""
 import argparse
 import shutil
+import os
 
 import pysparkling
 import scipy.io
@@ -11,16 +12,6 @@ from .get_type import trajectory_type
 
 import warnings
 warnings.filterwarnings("ignore")
-
-"""
-def pharus(sc, input_file):
-    print('processing ' + input_file)
-
-    return (sc
-            .textFile(input_file)
-            .map(readers.pharus)
-            .cache())
-"""
 
 def pharus(sc, input_file):
     print('processing ' + input_file)
@@ -172,7 +163,7 @@ def write(input_rows, output_file, args):
     private_test_scenes = Scenes(fps=args.fps, start_scene_id=val_scenes.scene_id, args=args)
     private_test_scenes.rows_to_file(test_rows, private_test_output)
 
-def categorize(sc, input_file, args):
+def categorize(sc, input_file, args, foldername):
     """ Categorize the Scenes """
 
     print(" Entering Categorizing ")
@@ -183,21 +174,21 @@ def categorize(sc, input_file, args):
         print("Categorizing Training Set")
         train_rows = get_trackrows(sc, input_file.replace('split', '').format('train'))
         train_id = trajectory_type(train_rows, input_file.replace('split', '').format('train'),
-                                   fps=args.fps, track_id=0, args=args)
+                                   fps=args.fps, track_id=0, args=args, foldername=foldername)
 
     val_id = train_id
     if args.val_fraction:
         print("Categorizing Validation Set")
         val_rows = get_trackrows(sc, input_file.replace('split', '').format('val'))
         val_id = trajectory_type(val_rows, input_file.replace('split', '').format('val'),
-                                 fps=args.fps, track_id=train_id, args=args)
+                                 fps=args.fps, track_id=train_id, args=args, foldername=foldername)
 
 
     if test_fraction:
         print("Categorizing Test Set")
         test_rows = get_trackrows(sc, input_file.replace('split', '').format('test_private'))
         _ = trajectory_type(test_rows, input_file.replace('split', '').format('test_private'),
-                            fps=args.fps, track_id=val_id, args=args)
+                            fps=args.fps, track_id=val_id, args=args, foldername=foldername)
 
 def edit_goal_file(old_filename, new_filename):
     """ Rename goal files.
@@ -208,7 +199,7 @@ def edit_goal_file(old_filename, new_filename):
     shutil.copy("goal_files/val/" + old_filename, "goal_files/val/" + new_filename)
     shutil.copy("goal_files/test_private/" + old_filename, "goal_files/test_private/" + new_filename)
 
-def main():
+def main(args_given=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--obs_len', type=int, default=9,
                         help='Length of observation')
@@ -220,6 +211,8 @@ def main():
                         help='Validation set fraction')
     parser.add_argument('--input_file', default="", type=str,
                         help='Input file path')
+    parser.add_argument('--output_path', default="", type=str,
+                        help='Output path')
     parser.add_argument('--fps', default=2.5, type=float,
                         help='fps')
     parser.add_argument('--order_frames', action='store_true',
@@ -254,75 +247,16 @@ def main():
     categorizers.add_argument('--acceptance', nargs='+', type=float, default=[0.1, 1, 1, 1],
                               help='acceptance ratio of different trajectory (I, II, III, IV) types')
 
-    args = parser.parse_args()
+    args = parser.parse_args(args_given)
     sc = pysparkling.Context()
 
-    # Real datasets conversion
-    if not args.synthetic:
-        """
-        write(pharus(sc, 'data/raw/pharus/aufbau/fri_aufbau.trk'),
-              'output_pre/{split}/fri_aufbau.ndjson', args)
-        categorize(sc, 'output_pre/{split}/fri_aufbau.ndjson', args)
+    name = os.path.basename(args.input_file)
+    name = os.path.splitext(name)[0]
 
-        write(pharus(sc, 'data/raw/pharus/aufbau/1person.trk'),
-              'output_pre/{split}/1person.ndjson', args)
-        categorize(sc, 'output_pre/{split}/1person.ndjson', args)
+    output_path = os.path.join(args.output_path,'output_pre/{split}/'+ name + '.ndjson')
 
-        write(pharus(sc, 'data/raw/pharus/aufbau/5personen.trk'),
-              'output_pre/{split}/5personen.ndjson', args)
-        categorize(sc, 'output_pre/{split}/5personen.ndjson', args
-        """
-        write(pharus(sc, 'data/raw/pharus/aufbau/05_Kreis.trk'),
-              'output_pre/{split}/05_Kreis.ndjson', args)
-        categorize(sc, 'output_pre/{split}/05_Kreis.ndjson', args)
-        """
-        write(biwi(sc, 'data/raw/biwi/seq_hotel/obsmat.txt'),
-              'output_pre/{split}/biwi_hotel.ndjson', args)
-        categorize(sc, 'output_pre/{split}/biwi_hotel.ndjson', args)
-
-        write(crowds(sc, 'data/raw/crowds/crowds_zara01.vsp'),
-              'output_pre/{split}/crowds_zara01.ndjson', args)
-        categorize(sc, 'output_pre/{split}/crowds_zara01.ndjson', args)
-        write(crowds(sc, 'data/raw/crowds/crowds_zara03.vsp'),
-              'output_pre/{split}/crowds_zara03.ndjson', args)
-        categorize(sc, 'output_pre/{split}/crowds_zara03.ndjson', args)
-        write(crowds(sc, 'data/raw/crowds/students001.vsp'),
-              'output_pre/{split}/crowds_students001.ndjson', args)
-        categorize(sc, 'output_pre/{split}/crowds_students001.ndjson', args)
-        write(crowds(sc, 'data/raw/crowds/students003.vsp'),
-              'output_pre/{split}/crowds_students003.ndjson', args)
-        categorize(sc, 'output_pre/{split}/crowds_students003.ndjson', args)
-        """
-
-        # # # new datasets
-        # write(lcas(sc, 'data/raw/lcas/test/data.csv'),
-        #       'output_pre/{split}/lcas.ndjson', args)
-        # categorize(sc, 'output_pre/{split}/lcas.ndjson', args)
-
-        # args.fps = 2
-        # write(wildtrack(sc, 'data/raw/wildtrack/Wildtrack_dataset/annotations_positions/*.json'),
-        #       'output_pre/{split}/wildtrack.ndjson', args)
-        # categorize(sc, 'output_pre/{split}/wildtrack.ndjson', args)
-        # args.fps = 2.5 # (Default)
-
-        # # CFF: More trajectories
-        # # Chunk_stride > 20 preferred & order_frames.
-        # args.chunk_stride = 20
-        # args.order_frames = True
-        # write(cff(sc, 'data/raw/cff_dataset/al_position2013-02-06.csv'),
-        #       'output_pre/{split}/cff_06.ndjson', args)
-        # categorize(sc, 'output_pre/{split}/cff_06.ndjson', args)
-        # args.chunk_stride = 2 # (Default)
-        # args.order_frames = False # (Default)
-
-    # Synthetic datasets conversion
-    else:
-        # Note: Generate Trajectories First! See command below
-        ## 'python -m trajnetdataset.controlled_data <args>'
-        write(controlled(sc, 'data/raw/controlled/orca_circle_crossing_5ped_1000scenes_.txt'),
-              'output_pre/{split}/orca_five_synth.ndjson', args)
-        categorize(sc, 'output_pre/{split}/orca_five_synth.ndjson', args)
-        edit_goal_file('orca_circle_crossing_5ped_1000scenes_.pkl', 'orca_five_synth.pkl')
-
+    write(pharus(sc, args.input_file),
+          output_path , args)
+    categorize(sc, output_path, args, name)
 if __name__ == '__main__':
     main()

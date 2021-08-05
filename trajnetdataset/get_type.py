@@ -123,14 +123,16 @@ def all_ped_present(scene):
     scene_xy = trajnetplusplustools.Reader.paths_to_xy(scene)
     return (not np.isnan(scene_xy).any())
 
-def write(rows, path, new_scenes, new_frames):
+def write(rows, path, new_scenes, new_frames, foldername=None):
     """ Writing scenes with categories """
-    output_path = path.replace('output_pre', 'output')
+    if not foldername:
+        foldername = 'output'
+    output_path = path.replace('output_pre', foldername)
     pysp_tracks = rows.filter(lambda r: r.frame in new_frames).map(trajnetplusplustools.writers.trajnet)
     pysp_scenes = pysparkling.Context().parallelize(new_scenes).map(trajnetplusplustools.writers.trajnet)
     pysp_scenes.union(pysp_tracks).saveAsTextFile(output_path)
 
-def trajectory_type(rows, path, fps, track_id=0, args=None):
+def trajectory_type(rows, path, fps, track_id=0, args=None, foldername=None):
     """ Categorization of all scenes """
 
     ## Read
@@ -243,9 +245,9 @@ def trajectory_type(rows, path, fps, track_id=0, args=None):
 
 
     # Writes the Final Scenes and Frames
-    write(rows, path, new_scenes, new_frames)
+    write(rows, path, new_scenes, new_frames, foldername=foldername)
     if test:
-        write(rows, path_test, new_scenes_test, new_frames_test)
+        write(rows, path_test, new_scenes_test, new_frames_test, foldername=foldername)
 
     ## Stats
 
